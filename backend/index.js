@@ -1,9 +1,13 @@
-const express = require('express')
-const mongoose = require('mongoose')
-const cors = require("cors")
+const express = require('express');
+const mongoose = require('mongoose');
+const session = require('express-session');
+const passport = require('passport');
+const LocalStrategy = require('passport-local');
+const passportLocalMongoose = require('passport-local-mongoose');
+const cors = require("cors");
 require("dotenv").config(); // Load environment variables from .env file
-const app = express()
-const port = 3000
+const app = express();
+const port = 3000;
 
 app.use(express.json());
 
@@ -19,6 +23,19 @@ async function main() {
   await mongoose.connect(DATABASE_URI);
 
 }
+
+const UserSchema = new mongoose.Schema({
+  email: {
+      type: String,
+      required: true,
+      unique: true
+  }
+});
+
+UserSchema.plugin(passportLocalMongoose);
+  
+
+const User = mongoose.model('User', UserSchema);
     
   const todoSchema = new mongoose.Schema({
     id: String,
@@ -59,6 +76,25 @@ async function main() {
 
 //post should put a todo into the database
 
+const sessionConfig = {
+  secret: 'thisshouldbeabettersecret!',
+  resave: false,
+  saveUninitialized: true,
+  cookie: {
+      httpOnly: true,
+      expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
+      maxAge: 1000 * 60 * 60 * 24 * 7
+  }
+}
+
+app.use(session(sessionConfig))
+
+app.use(passport.initialize());
+app.use(passport.session());
+passport.use(new LocalStrategy(User.authenticate()));
+
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
 
 // basic node.js setup
 
@@ -102,9 +138,19 @@ app.post('/post', (req, res) => {
     todoToPost.save();
   })
 
+app.post('/signup', async (req, res) => {
+  const { email, username, password } = req.body;
+  const user = new User({ email, username});
+  const registeredUser = await User.register(user, password);
+  console.log(registeredUser);
+});
+
+
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
 })
+
+
 
 //mvp setup
 

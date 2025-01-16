@@ -4,9 +4,12 @@ import './index.css'
 import './output.css'
 import App from './App.jsx'
 import ToDoList from './ToDoList.jsx'
+import SignUp from './SignUp.jsx'
+
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
+    <SignUp />
     <ToDoList />
     <div className='text-center text-red-500'>
       Hello, Tailwind
